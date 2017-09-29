@@ -1,0 +1,305 @@
+---
+title: "Forecasting project"
+author: "Ashton"
+date: "April 11, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r, echo=FALSE}
+#import data and packages
+
+GDPGrowth <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/GDPGrowth.csv")
+  View(GDPGrowth)
+
+GDP <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/GDP.csv")
+  View(GDP)
+  
+OECDForecast <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/OECDForecast.csv")
+  View(OECDForecast)
+  
+OECDForecast2 <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/OECDForecast2.csv")
+  View(OECDForecast2)
+
+library(hydroGOF)
+library(forecast)
+library(tseries)
+library(lmtest)
+```
+
+```{r, echo=FALSE}
+#Extract data and convert to time series
+
+GRC <- GDP$Greece
+DEU <- GDP$Germany
+FRA <- GDP$France
+GBR <- GDP$UK
+
+GRC.ts <- ts(GDPGrowth$Greece)
+DEU.ts <- ts(GDPGrowth$Germany)
+FRA.ts <- ts(GDPGrowth$France)
+GBR.ts <- ts(GDPGrowth$UK)
+
+#Exploratory data analysis
+
+y <- c(1970:2015)
+
+plot(y, GRC, type = "l", col = "green", xlab = "Year", ylab = "GDP", main = "Greece")
+plot(y, DEU, type = "l", col = "gold3", xlab = "Year", ylab = "GDP", main = "Germany")
+plot(y, FRA, type = "l", col = "blue", xlab = "Year", ylab = "GDP", main = "France")
+plot(y, GBR, type = "l", col = "red", xlab = "Year", ylab = "GDP", main = "UK")
+
+x <- c(2006:2015)
+
+plot(x, GRC[36:45], type = "l", col = "green", xlab = "Year", ylab = "GDP", main = "Greece")
+plot(x, DEU[36:45], type = "l", col = "gold3", xlab = "Year", ylab = "GDP", main = "Germany")
+plot(x, FRA[36:45], type = "l", col = "blue", xlab = "Year", ylab = "GDP", main = "France")
+plot(x, GBR[36:45], type = "l", col = "red", xlab = "Year", ylab = "GDP", main = "UK")
+
+plot(GRC.ts, type = "o", col = "green", xlab = "Year", ylab = "GDP", main = "Greece")
+plot(DEU.ts, type = "o", col = "gold3", xlab = "Year", ylab = "GDP", main = "Germany")
+plot(FRA.ts, type = "o", col = "blue", xlab = "Year", ylab = "GDP", main = "France")
+plot(GBR.ts, type = "o", col = "red", xlab = "Year", ylab = "GDP", main = "UK")
+```
+
+```{r, echo=FALSE}
+#Tests for stationarity
+Statistics <- data.frame(c("GRC", "DEU", "FRA", "GBR"), c(adf.test(GRC.ts)$p.value, adf.test(DEU.ts)$p.value, adf.test(FRA.ts)$p.value, adf.test(GBR.ts)$p.value))
+
+colnames(Statistics) <- c("Country", "adf (<. 05)")
+
+Statistics
+```
+
+```{r, echo=FALSE}
+#Autocorrelations and Partial Autocorrelations
+par(mfrow = c(1,2))
+
+Acf(GRC.ts)
+Pacf(GRC.ts)
+
+Acf(DEU.ts)
+Pacf(DEU.ts)
+
+Acf(FRA.ts)
+Pacf(FRA.ts)
+
+Acf(GBR.ts)
+Pacf(GBR.ts)
+
+par(mfrow = c(1,1))
+
+CORRGRC <- data.frame(Acf(GRC.ts)$acf[1:16], Pacf(GRC.ts)$acf)
+CORRDEU <- data.frame(Acf(GRC.ts)$acf[1:16], Pacf(GRC.ts)$acf)
+CORRFRA <- data.frame(Acf(GRC.ts)$acf[1:16], Pacf(GRC.ts)$acf)
+CORRGBR <- data.frame(Acf(GRC.ts)$acf[1:16], Pacf(GRC.ts)$acf)
+
+colnames(CORRGRC) <- c("Acorr", "P. Acorr")
+colnames(CORRDEU) <- c("Acorr", "P. Acorr")
+colnames(CORRFRA) <- c("Acorr", "P. Acorr")
+colnames(CORRGBR) <- c("Acorr", "P. Acorr")
+
+CORRGRC
+CORRDEU
+CORRFRA
+CORRGBR
+```
+
+```{r,echo=FALSE}
+#Create forecasts
+GRC.arima <- auto.arima(GRC.ts)
+DEU.arima <- auto.arima(DEU.ts)
+FRA.arima <- auto.arima(FRA.ts, max.d = 0, max.D = 0)
+GBR.arima <- auto.arima(GBR.ts)
+
+summary(GRC.arima)
+summary(DEU.arima)
+summary(FRA.arima)
+summary(GBR.arima)
+
+GRC.f <- fitted.Arima(GRC.arima)
+DEU.f <- fitted.Arima(DEU.arima)
+FRA.f <- fitted.Arima(FRA.arima)
+GBR.f <- fitted.Arima(GBR.arima)
+
+#Naive Forecasts
+GRC.n <- fitted.Arima(naive(GRC.ts))
+DEU.n <- fitted.Arima(naive(DEU.ts))
+FRA.n <- fitted.Arima(naive(FRA.ts))
+GBR.n <- fitted.Arima(naive(GBR.ts))
+```
+
+```{r, echo=FALSE}
+#Transform forecasts
+GRC.OECDf <- auto.arima(ts(OECDForecast2$Greece[26:45]))
+DEU.OECDf <- auto.arima(ts(OECDForecast2$Germany[22:45]))
+FRA.OECDf <- auto.arima(ts(OECDForecast2$France))
+GBR.OECDf <- auto.arima(ts(OECDForecast2$UK))
+
+GRC.OECD <- ts(OECDForecast$Greece)
+DEU.OECD <- ts(OECDForecast$Germany)
+FRA.OECD <- ts(OECDForecast$France)
+GBR.OECD <- ts(OECDForecast$UK)
+```
+
+```{r, echo=FALSE}
+plot(x, GRC.ts[36:45], type = "o", col = "green", main = "Arima Forecast", ylab = "GDP Growth, Greece", xlab = "Year")
+lines(x, GRC.f[36:45], type = "o", col = "mediumseagreen")
+
+plot(x, GRC.ts[36:45], type = "o", col = "green", main = "Naive Forecast", ylab = "GDP Growth, Greece", xlab = "Year")
+lines(x, GRC.n[36:45], type = "o", col = "seagreen")
+
+plot(x, GRC.ts[36:45], type = "o", col = "green1", main = "OECD Forecast", ylab = "GDP Growth, OECD", xlab = "Year")
+lines(x, GRC.OECD, type = "o", col = "darkgreen")
+```
+
+```{r, echo=FALSE}
+plot(x, DEU.ts[36:45], type = "o", col = "gold", main = "Arima Forecast", ylab = "GDP Growth, Germany", xlab = "Year")
+lines(x, DEU.f[36:45], type = "o", col = "yellow3")
+
+
+plot(x, DEU.ts[36:45], type = "o", col = "gold", main = "Naive Forecast", ylab = "GDP Growth, Germany", xlab = "Year")
+lines(x, DEU.n[36:45], type = "o", col = "gold3")
+
+plot(x, DEU.ts[36:45], type = "o", col = "gold", main = "OECD Forecast", ylab = "GDP Growth, Germany", xlab = "Year")
+lines(x, DEU.OECD, type = "o", col = "gold4")
+```
+
+```{r, echo=FALSE}
+plot(x, FRA.ts[36:45], type = "o", col = "cyan", main = "Arima Forecast", ylab = "GDP Growth, France", xlab = "Year")
+lines(x, FRA.f[36:45], type = "o", col = "dodgerblue")
+
+plot(x, FRA.ts[36:45], type = "o", col = "cyan", main = "Naive Forecast", ylab = "GDP Growth, France", xlab = "Year")
+lines(x, FRA.n[36:45], type = "o", col = "darkslateblue")
+
+plot(x, FRA.ts[36:45], type = "o", col = "cyan", main = "OECD Forecast", ylab = "GDP Growth, France", xlab = "Year")
+lines(x, FRA.OECD, type = "o", col = "blue4")
+```
+
+```{r, echo=FALSE}
+plot(x, GBR.ts[36:45], type = "o", col = "red", main = "Arima Forecast", ylab = "GDP Growth, UK", xlab = "Year")
+lines(x, GBR.f[36:45], type = "o", col = "coral")
+
+plot(x, GBR.ts[36:45], type = "o", col = "red", main = "Naive Forecast", ylab = "GDP Growth, UK", xlab = "Year")
+lines(x, GBR.n[36:45], type = "o", col = "chocolate")
+
+plot(x, GBR.ts[36:45], type = "o", col = "red", main = "OECD Forecast", ylab = "GDP Growth, UK", xlab = "Year")
+lines(x, GBR.OECD, type = "o", col = "darkred")
+```
+
+```{r, echo=FALSE}
+#Errors
+GRC.e <- data.frame(GRC.f[36:45] - GRC.ts[36:45], GRC.n[36:45] - GRC.ts[36:45], GRC.OECD - GRC.ts[36:45])
+
+colnames(GRC.e) <- c("Arima", "Naive", "OECD")
+GRC.e
+
+DEU.e <- data.frame(DEU.f[36:45] - DEU.ts[36:45], DEU.n[36:45] - DEU.ts[36:45], DEU.OECD - DEU.ts[36:45])
+
+colnames(DEU.e) <- c("Arima", "Naive", "OECD")
+DEU.e
+
+FRA.e <- data.frame(FRA.f[36:45] - FRA.ts[36:45], FRA.n[36:45] - FRA.ts[36:45], FRA.OECD - FRA.ts[36:45])
+
+colnames(FRA.e) <- c("Arima", "Naive", "OECD")
+FRA.e
+
+GBR.e <- data.frame(GBR.f[36:45] - GBR.ts[36:45], GBR.n[36:45] - GBR.ts[36:45], GBR.OECD - GBR.ts[36:45])
+
+colnames(GBR.e) <- c("Arima", "Naive", "OECD")
+GBR.e
+```
+
+```{r, echo=FALSE}
+#Evaluate Errors
+RMSEs <- data.frame(c("Arima", "Naive", "OECD"), c(rmse(GRC.f[36:45], GRC.ts[36:45]), rmse(GRC.n[36:45], GRC.ts[36:45]), rmse(GRC.OECD, GRC.ts[36:45])), c(rmse(DEU.f[36:45], DEU.ts[36:45]), rmse(DEU.n[36:45], DEU.ts[36:45]), rmse(DEU.OECD, DEU.ts[36:45])), c(rmse(FRA.f[36:45], FRA.ts[36:45]), rmse(FRA.n[36:45], FRA.ts[36:45]), rmse(FRA.OECD, FRA.ts[36:45])), c(rmse(GBR.f[36:45], GBR.ts[36:45]), rmse(GBR.n[36:45], GBR.ts[36:45]), rmse(GBR.OECD, GBR.ts[36:45])))
+
+colnames(RMSEs) <- c("Forecast", "GRC", "DEU", "FRA", "UK")
+
+RMSEs
+
+#Bias
+Bias <- data.frame(c("Arima", "Naive", "OECD"), c(mean(GRC.e$Arima), mean(GRC.e$Naive), mean(GRC.e$OECD)), c(mean(DEU.e$Arima), mean(DEU.e$Naive), mean(DEU.e$OECD)), c(mean(FRA.e$Arima), mean(FRA.e$Naive), mean(FRA.e$OECD)), c(mean(GBR.e$Arima), mean(GBR.e$Naive), mean(GBR.e$OECD)))
+
+colnames(Bias) <- c("Forecast", "GRC", "DEU", "FRA", "UK")
+
+Bias
+
+Means <- data.frame(c("Arima", "Naive", "OECD"), c(mean(GRC.f[36:45]), mean(GRC.n[36:45]), mean(GRC.OECD)), c(mean(DEU.f[36:45]), mean(DEU.n[36:45]), mean(DEU.OECD)), c(mean(FRA.f[36:45]), mean(FRA.n[36:45]), mean(FRA.OECD)), c(mean(GBR.f[36:45]), mean(GBR.n[36:45]), mean(GBR.OECD)))
+
+colnames(Means) <- c("Forecast", "GRC", "DEU", "FRA", "UK")
+
+Means
+```
+
+```{r,echo=FALSE}
+#Regression tests
+GRClm.f <- lm(GRC.ts[36:45] ~ GRC.f[36:45])
+GRClm.n <- lm(GRC.ts[36:45] ~ GRC.n[36:45])
+GRClm.OECD <- lm(GRC.ts[36:45] ~ GRC.OECD)
+
+summary(GRClm.f)
+summary(GRClm.n)
+summary(GRClm.OECD)
+
+DEUlm.f <- lm(DEU.ts[36:45] ~ DEU.f[36:45])
+DEUlm.n <- lm(DEU.ts[36:45] ~ DEU.n[36:45])
+DEUlm.OECD <- lm(DEU.ts[36:45] ~ DEU.OECD)
+
+summary(DEUlm.f)
+summary(DEUlm.n)
+summary(DEUlm.OECD)
+
+FRAlm.f <- lm(FRA.ts[36:45] ~ FRA.f[36:45])
+FRAlm.n <- lm(FRA.ts[36:45] ~ FRA.n[36:45])
+FRAlm.OECD <- lm(FRA.ts[36:45] ~ FRA.OECD)
+
+summary(FRAlm.f)
+summary(FRAlm.n)
+summary(FRAlm.OECD)
+
+GBRlm.f <- lm(GBR.ts[36:45] ~ GBR.f[36:45])
+GBRlm.n <- lm(GBR.ts[36:45] ~ GBR.n[36:45])
+GBRlm.OECD <- lm(GBR.ts[36:45] ~ GBR.OECD)
+
+summary(GBRlm.f)
+summary(GBRlm.n)
+summary(GBRlm.OECD)
+```
+
+```{r,echo=FALSE}
+#Diebold-Mariano tests
+dm.test(GRC.e$Arima, GRC.e$Naive)
+dm.test(GRC.e$Arima, GRC.e$OECD)
+dm.test(GRC.e$Naive, GRC.e$OECD)
+
+dm.test(DEU.e$Arima, DEU.e$Naive)
+dm.test(DEU.e$Arima, DEU.e$OECD)
+dm.test(DEU.e$Naive, DEU.e$OECD)
+
+dm.test(FRA.e$Arima, FRA.e$Naive)
+dm.test(FRA.e$Arima, FRA.e$OECD)
+dm.test(FRA.e$Naive, FRA.e$OECD)
+
+dm.test(GBR.e$Arima, GBR.e$Naive)
+dm.test(GBR.e$Arima, GBR.e$OECD)
+dm.test(GBR.e$Naive, GBR.e$OECD)
+```
+
+```{r,echo=FALSE}
+#Durbin-Watson Stats
+DWtests <- data.frame(c("Arima", "Naive", "OECD"), c(dwtest(GRClm.f)$p.value, dwtest(GRClm.n)$p.value, dwtest(GRClm.OECD)$p.value), c(dwtest(DEUlm.f)$p.value, dwtest(DEUlm.n)$p.value, dwtest(DEUlm.OECD)$p.value), c(dwtest(FRAlm.f)$p.value, dwtest(FRAlm.n)$p.value, dwtest(FRAlm.OECD)$p.value), c(dwtest(GBRlm.f)$p.value, dwtest(GBRlm.n)$p.value, dwtest(GBRlm.OECD)$p.value))
+
+colnames(DWtests) <- c("Forecast", "GRC", "DEU", "FRA", "GBR")
+
+DWtests
+```
