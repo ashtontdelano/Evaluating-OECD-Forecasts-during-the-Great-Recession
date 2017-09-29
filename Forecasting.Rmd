@@ -18,16 +18,16 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r, echo=FALSE}
 #import data and packages
 
-GDPGrowth <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/GDPGrowth.csv")
+GDPGrowth <- read.csv("GDPGrowth.csv")
   View(GDPGrowth)
 
-GDP <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/GDP.csv")
+GDP <- read.csv("GDP.csv")
   View(GDP)
   
-OECDForecast <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/OECDForecast.csv")
+OECDForecast <- read.csv("OECDForecast.csv")
   View(OECDForecast)
   
-OECDForecast2 <- read.csv("C:/Users/Ashton/Desktop/R_Projects/Forecasting project/Raw Data/OECDForecast2.csv")
+OECDForecast2 <- read.csv("OECDForecast2.csv")
   View(OECDForecast2)
 
 library(hydroGOF)
